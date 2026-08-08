@@ -1,4 +1,4 @@
-# **OptionPricing Toolkit - Python Package**
+# **OptionPricing Toolkit and Greeks- Python Package**
 
 ## **Introduction**
 
