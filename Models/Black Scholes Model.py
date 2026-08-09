@@ -28,3 +28,44 @@ class BlackScholesModel:
          else:
               raise ValueError("Option type must be either call or put")
 
+     def delta(self, t=0, St=None, K=None, T=None, r=None, sigma = None, option='call'):
+              St = St if St is not None else self.S0
+              K = K if K is not None else self.K
+              r = r if r is not None else self.r
+              T = T if T is not None else self.T
+              sigma = sigma if sigma is not None else self.sigma
+
+              d1 = (np.log(St/K) + r * (T-t) + 0.5 * (sigma**2)*(T-t)) / (sigma * np.sqrt(T-t))
+
+              if option == 'call':
+                    return norm.cdf(d1)
+              else:
+                    return norm.cdf(d1) - 1 # put option
+
+
+          def vega(self, t=0, St=None, K=None, T=None, r=None, sigma = None, option='call'):
+                        St = St if St is not None else self.S0
+                        K = K if K is not None else self.K
+                        r = r if r is not None else self.r
+                        T = T if T is not None else self.T
+                        sigma = sigma if sigma is not None else self.sigma
+
+                        # same for call and put option
+                        d1 = (np.log(St/K) + r * (T-t) + 0.5 * (sigma**2)*(T-t)) / (sigma * np.sqrt(T-t))
+                        return St * norm.pdf(d1) * np.sqrt(T-t)
+
+          def theta(self, t=0, St=None, K=None, T=None, r=None, sigma = None, option='call'):
+                        St = St if St is not None else self.S0
+                        K = K if K is not None else self.K
+                        r = r if r is not None else self.r
+                        T = T if T is not None else self.T
+                        sigma = sigma if sigma is not None else self.sigma
+          
+                        d1 = (np.log(St/K) + r * (T-t) + 0.5 * (sigma**2)*(T-t)) / (sigma * np.sqrt(T-t))
+                        d2 = d1 - sigma * np.sqrt(T-t)
+          
+                        if option == 'call':
+                              return -(St * norm.pdf(d1) * sigma) / (2 * np.sqrt(T - t)) - r * K * np.exp(-r * (T - t)) * norm.cdf(d2)
+                        else: # put option
+                              return -(St * norm.pdf(d1) * sigma) / (2 * np.sqrt(T - t)) + r * K * np.exp(-r * (T - t)) * norm.cdf(-d2)
+          
