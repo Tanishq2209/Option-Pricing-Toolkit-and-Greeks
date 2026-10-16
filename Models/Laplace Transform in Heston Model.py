@@ -4,7 +4,7 @@ from scipy.integrate import quad
 class LaplaceHestonModel:
     # Laplace transform method for European option pricing in Heston model
     def __init__(self, S0=100, r=0.05, T=1, K=100, gam0=0.04, kappa=1.0,
-                 lamb=0.0, sig_tilde=0.2, rho=-0.7, R=1.5, upper=100):
+                 lamb=0.0, sig_tilde=0.2, rho=-0.7, R=1.5, upper=100, h=1e-4):
         self.S0 = S0
         self.r = r
         self.T = T
@@ -16,6 +16,7 @@ class LaplaceHestonModel:
         self.rho = rho
         self.R = R
         self.upper = upper
+        self.h = h
 
     def _heston_char(self, u, St, t, T, r, gamt, kappa, lamb, sig_tilde, rho):
         B = rho * sig_tilde * u * 1j - lamb
@@ -63,3 +64,63 @@ class LaplaceHestonModel:
             return call_price
         else:
             return call_price - St + K * np.exp(-r * (T - t))
+
+    def delta(self, option='call', t=0, St=None, K=None, T=None, r=None,
+              gam0=None, kappa=None, lamb=None, sig_tilde=None, rho=None,
+              R=None, upper=None, h=None):
+        St = St if St is not None else self.S0
+        h = h if h is not None else self.h
+        up = self.price(option, t, St + h, K, T, r, gam0, kappa, lamb,
+                        sig_tilde, rho, R, upper)
+        dn = self.price(option, t, St - h, K, T, r, gam0, kappa, lamb,
+                        sig_tilde, rho, R, upper)
+        return (up - dn) / (2 * h)
+
+    def gamma(self, option='call', t=0, St=None, K=None, T=None, r=None,
+              gam0=None, kappa=None, lamb=None, sig_tilde=None, rho=None,
+              R=None, upper=None, h=None):
+        St = St if St is not None else self.S0
+        h = h if h is not None else self.h
+        up = self.price(option, t, St + h, K, T, r, gam0, kappa, lamb,
+                        sig_tilde, rho, R, upper)
+        mid = self.price(option, t, St, K, T, r, gam0, kappa, lamb,
+                         sig_tilde, rho, R, upper)
+        dn = self.price(option, t, St - h, K, T, r, gam0, kappa, lamb,
+                        sig_tilde, rho, R, upper)
+        return (up - 2 * mid + dn) / (h ** 2)
+
+    def vega(self, option='call', t=0, St=None, K=None, T=None, r=None,
+             gam0=None, kappa=None, lamb=None, sig_tilde=None, rho=None,
+             R=None, upper=None, h=None):
+        St = St if St is not None else self.S0
+        sig_tilde = sig_tilde if sig_tilde is not None else self.sig_tilde
+        h = h if h is not None else self.h
+        up = self.price(option, t, St, K, T, r, gam0, kappa, lamb,
+                        sig_tilde + h, rho, R, upper)
+        dn = self.price(option, t, St, K, T, r, gam0, kappa, lamb,
+                        sig_tilde - h, rho, R, upper)
+        return (up - dn) / (2 * h)
+
+    def theta(self, option='call', t=0, St=None, K=None, T=None, r=None,
+              gam0=None, kappa=None, lamb=None, sig_tilde=None, rho=None,
+              R=None, upper=None, h=None):
+        St = St if St is not None else self.S0
+        T = T if T is not None else self.T
+        h = h if h is not None else self.h
+        up = self.price(option, t, St, K, T + h, r, gam0, kappa, lamb,
+                        sig_tilde, rho, R, upper)
+        dn = self.price(option, t, St, K, T - h, r, gam0, kappa, lamb,
+                        sig_tilde, rho, R, upper)
+        return -(up - dn) / (2 * h)
+
+    def rho(self, option='call', t=0, St=None, K=None, T=None, r=None,
+            gam0=None, kappa=None, lamb=None, sig_tilde=None, rho=None,
+            R=None, upper=None, h=None):
+        St = St if St is not None else self.S0
+        r = r if r is not None else self.r
+        h = h if h is not None else self.h
+        up = self.price(option, t, St, K, T, r + h, gam0, kappa, lamb,
+                        sig_tilde, rho, R, upper)
+        dn = self.price(option, t, St, K, T, r - h, gam0, kappa, lamb,
+                        sig_tilde, rho, R, upper)
+        return (up - dn) / (2 * h)
